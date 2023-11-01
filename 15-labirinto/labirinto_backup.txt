@@ -22,54 +22,58 @@ void startNode(struct node * new_node, int color){ // Initializes the properties
     new_node->bottom_left = -1;
     new_node->bottom_right = -1;
 }
-struct node graph[MAX_H * 2 - 1][MAX_W]; // Global node matrix
 
-void nodeStatus(int last_x, int last_y, int x, int y, int * next_x, int * next_y, int * continuable_cycle, int * endable_cycle){
-    if(graph[y][x].was_visited){ // Node already visited AND it was the last visited = Invalid path
-        if (x != last_x || y != last_y) *endable_cycle = 1; // Node already visited = The cycle may end here
+// struct node ** getNode(struct node ** graph, int color, int position){
+//     switch(position){
+//         case 0: return (color) ?  : &graph[0][1];
+        
+//         case 1: return (color) ?  : ;
+        
+//         case 2: return (color) ?  : ;
+        
+//         case 3: return (color) ?  : ;
+
+//         default: return NULL;
+//     }
+// }
+
+void nodeStatus(struct node ** graph, int last_x, int last_y, int x, int y, int * next_x, int * next_y, int * continuable_cycle, int * endable_cycle){
+    if(graph[y][x].was_visited){
+        if (x != last_x && y != last_y) *endable_cycle = 1;
         return;
     }
-    *continuable_cycle = 1; // Node wasn't visited = The cycle checking may continue
+    *continuable_cycle = 1;
     *next_x = x;
     *next_y = y;
     return;
 }
 
-int searchCycle(int x, int y, int last_x, int last_y, int current_cycle){
-    if(graph[y][x].was_visited) return 0; // Ignores visited nodes
-    
+int searchCycle(struct node ** graph, int y, int x, int last_x, int last_y, int current_cycle){
     int continuable_cycle = 0;
     int next_x, next_y;
     int endable_cycle = 0;
 
-    int temp_y = y - 1; // temp_x, temp_y: Next node's coordinates
+    int temp_y = y - 1;
     if(graph[y][x].top_left == 1){
         int temp_x = (graph[y][x].color == 0) ? x : x - 1;
-        nodeStatus(last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
+        nodeStatus(graph, last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
     }
     if(graph[y][x].top_right == 1){
         int temp_x = (graph[y][x].color == 0) ? x + 1: x;
-        nodeStatus(last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
+        nodeStatus(graph, last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
     }
     temp_y = y + 1;
     if(graph[y][x].bottom_left == 1){
         int temp_x = (graph[y][x].color == 0) ? x : x - 1;
-        nodeStatus(last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
+        nodeStatus(graph, last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
     }
     if(graph[y][x].bottom_right == 1){
         int temp_x = (graph[y][x].color == 0) ? x + 1 : x;
-        nodeStatus(last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
+        nodeStatus(graph, last_x, last_y, temp_x, temp_y, &next_x, &next_y, &continuable_cycle, &endable_cycle);
     }
 
-    // printf("node: [%d, %d]", y, x);
-    // printf("| ENDABLE: %d | CONTINUABLE: %d | CYCLE: %d\n", endable_cycle, continuable_cycle, current_cycle);
-    // if(continuable_cycle)
-    //     printf("NEXT: [%d, %d]\n", next_x, next_x);
-    // putchar('\n');
-
-    graph[y][x].was_visited = 1; // Marks the node as visited
     if(continuable_cycle)
-        return searchCycle(next_x, next_y, x, y, current_cycle + 1);
+        return searchCycle(graph, next_x, next_y, x, y, current_cycle + 1);
     if(endable_cycle)
         return current_cycle;
     return 0;
@@ -77,14 +81,17 @@ int searchCycle(int x, int y, int last_x, int last_y, int current_cycle){
 
 int main(){
     int w, h;
-    scanf("%d %d\n", &w, &h); // Maze Length
+    scanf("%d %d\n", &w, &h);
+    printf("w: %d, h: %d\n", w, h);
 
     char maze[MAX_H][MAX_W + 1];
     for(int i = 1; w != 0 || h != 0; i++, scanf("%d %d\n", &w, &h)){ // Maze Input
-        for(int j=0; j < h; j++)
+        for(int j=0; j < h; j++){
             scanf("%s", maze[j]);
-        
+            printf("%s\n", maze[j]);
+        }
 
+        struct node graph[MAX_H * 2 - 1][MAX_W];
         for(int j = 0; j < w - 1; j++) // First Blue Line
             startNode(&graph[0][j], 0);
 
@@ -147,22 +154,24 @@ int main(){
 
         for(int j = 0; j < h * 2 - 1; j++){
             for(int k = 0; k < w - 1; k++){
-                if(!graph[j][k].was_visited){ // Checks if the node can create a cycle
-                    int cycle_report = searchCycle(k, j, -1, -1, 1);
-                    cycles = (cycle_report) ? cycles + 1 : cycles;
-                    longest_cycle = (cycle_report > longest_cycle) ? cycle_report : longest_cycle;
+                if(!graph[j][k].was_visited){
+                    int cycle_report = searchCycle(&graph, j, k, -1, -1, 1);
+                    if(cycle_report){
+                        cycles++;
+                        longest_cycle = (cycle_report > longest_cycle) ? cycle_report : longest_cycle;
+                    }
                 }
             }
         }
 
-        if(i > 1) putchar('\n');
-        printf("Maze #%d:\n", i); // Output
+        printf("Maze #%d:\n", i);
         if(cycles)
-            printf("%d Cycles; the longest has length %d.\n", cycles, longest_cycle);
+            printf("%d Cycles; the longest has length %d.\n\n", cycles, longest_cycle);
         else
-            puts("There are no cycles.");
+            puts("There are no cycles.\n");
 
-        scanf("%d %d\n", &w, &h); // Input
+        scanf("%d %d\n", &w, &h);
+        printf("w: %d, h: %d\n", w, h);
     }
     return 0;
 }
