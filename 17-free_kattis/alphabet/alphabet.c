@@ -9,11 +9,16 @@ int main(){
 
     int deletions = 0;
     int max_index;
+    char lesser_letter = string[0];
     for(int i = 1; i < strlen(string); i++){
         if(string[i] <= string[i - 1])
             deletions++;
         else
             max_index = i;
+        if(string[i] < lesser_letter){
+            deletions = i;
+            lesser_letter = string[i];
+        }
     }
 
     printf("Deletions: %d. Insertions: %d\n", deletions, string[max_index] - 'a');
